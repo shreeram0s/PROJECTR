@@ -15,8 +15,29 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def root_view(request):
+    """Root endpoint to verify backend is running"""
+    return JsonResponse({
+        'status': 'ok',
+        'message': 'ProFileMatch Backend API',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/health/',
+            'upload': '/api/upload/',
+            'analyze': '/api/analyze/',
+            'jobs': '/api/jobs/',
+            'interview-kit': '/api/interview-kit/',
+            'history': '/api/history/',
+            'compare': '/api/compare/',
+        }
+    })
 
 urlpatterns = [
+    path('', root_view, name='root'),
     path('admin/', admin.site.urls),
     path('api/', include('analyzer.urls')),
 ]

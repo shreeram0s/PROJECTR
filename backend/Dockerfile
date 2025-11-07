@@ -21,10 +21,9 @@ RUN python -m spacy download en_core_web_sm
 
 COPY . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
-
+# Expose port (Render will provide PORT env var at runtime)
 EXPOSE 8000
 
-# Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && gunicorn profilematch.wsgi:application --bind 0.0.0.0:8000 --timeout 120 --workers 1"]
+# Run migrations, collect static files, and start server
+# Use PORT env var from Render, default to 8000 for local development
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn profilematch.wsgi:application --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1"]

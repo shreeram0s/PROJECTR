@@ -11,9 +11,11 @@ services:
       - key: DEBUG
         value: "False"
       - key: ALLOWED_HOSTS
-        value: "profilematch-backend.onrender.com,localhost,127.0.0.1"
+        value: "projektabackend.onrender.com,profilematch-backend.onrender.com,localhost,127.0.0.1"
       - key: CORS_ALLOWED_ORIGINS
-        value: "https://profilematch-frontend.onrender.com"
+        value: "https://profilematch-frontend.onrender.com,https://projektabackend.onrender.com"
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: "False"
       - key: DB_NAME
         value: "magic2"
       - key: DB_USER
@@ -40,7 +42,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: "https://profilematch-backend.onrender.com"
+        value: "https://projektabackend.onrender.com"
 
 databases:
   - name: profilematch-db
