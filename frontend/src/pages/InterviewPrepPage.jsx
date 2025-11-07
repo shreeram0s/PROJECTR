@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import { api } from '../apiClient';
 import { 
   Users, 
   Code, 
@@ -63,7 +63,7 @@ const InterviewPrepPage = () => {
     setError(null);
     
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/interview-kit/`, {
+      const response = await api.post('/api/interview-kit/', {
         skills: missingSkills
       });
       

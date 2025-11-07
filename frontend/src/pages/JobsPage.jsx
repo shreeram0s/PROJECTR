@@ -1,34 +1,18 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Briefcase, 
-  Building, 
   MapPin, 
   DollarSign, 
   Calendar, 
   ExternalLink, 
-  Loader2,
   ArrowRight,
   Target,
-  User,
   Code,
-  Database,
-  Globe,
-  Zap,
-  Shield,
-  Cloud,
-  ShoppingCart,
-  Apple,
-  Facebook,
-  Monitor,
-  Server,
-  Users,
-  Factory,
-  Flag,
-  TrendingUp
+  Loader2
 } from 'lucide-react';
-import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { api } from '../apiClient';
 
 // Function to get a company logo based on company name
 const getCompanyLogo = (companyName) => {
@@ -143,7 +127,7 @@ const JobsPage = () => {
     setError(null);
     
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/jobs/`, {
+      const response = await api.get('/api/jobs/', {
         params: {
           skills: skills.join(',')
         }

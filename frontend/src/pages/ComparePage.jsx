@@ -1,15 +1,28 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FileUp, FileText, BarChart3, PieChart, Loader2, Upload, Brain } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
-import axios from 'axios';
+import { 
+  FileUp, 
+  FileText, 
+  BarChart3, 
+  Users, 
+  ArrowRight,
+  Upload,
+  Zap,
+  Target,
+  FileSearch,
+  GitCompare
+} from 'lucide-react';
+import { api, apiForm } from '../apiClient';
+import SkillDistributionChart from '../components/SkillDistributionChart';
 
 const ComparePage = () => {
   const [file1, setFile1] = useState(null);
   const [file2, setFile2] = useState(null);
-  const [comparisonResult, setComparisonResult] = useState(null);
+  const [comparisonData, setComparisonData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   const handleFile1Change = (e) => {
     setFile1(e.target.files[0]);
@@ -20,92 +33,70 @@ const ComparePage = () => {
   };
 
   const handleCompare = async () => {
-    if (!file1 || !file2) {
-      setError('Please select both resume files to compare');
+    if (!file1) {
+      setError('Please upload the first resume');
       return;
     }
     
+    if (!file2) {
+      setError('Please upload the second resume');
+      return;
+    }
+
     setLoading(true);
+    setShowAnimation(true);
     setError(null);
-    
-    // Create mock job descriptions for both resumes
-    const mockJD = "We are looking for a candidate with skills in programming, software development, project management, communication, and problem solving.";
-    
+
+    const formData1 = new FormData();
+    formData1.append('resume', file1);
+    formData1.append('jd', file1); // Using same file for both resume and jd
+
+    const formData2 = new FormData();
+    formData2.append('resume', file2);
+    formData2.append('jd', file2); // Using same file for both resume and jd
+
     try {
-      // Upload first resume
-      const formData1 = new FormData();
-      formData1.append('resume', file1);
-      formData1.append('jd', new Blob([mockJD], { type: 'text/plain' }), 'mock_jd1.txt');
+      // Upload first file
+      const uploadResponse1 = await apiForm.post('/api/upload/', formData1);
       
-      const uploadResponse1 = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/upload/`, formData1, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      // Upload second resume
-      const formData2 = new FormData();
-      formData2.append('resume', file2);
-      formData2.append('jd', new Blob([mockJD], { type: 'text/plain' }), 'mock_jd2.txt');
-      
-      const uploadResponse2 = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/upload/`, formData2, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      // Analyze both resumes
-      const analyzeResponse1 = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/analyze/`, {
+      // Upload second file
+      const uploadResponse2 = await apiForm.post('/api/upload/', formData2);
+
+      // Analyze first file
+      const analyzeResponse1 = await api.post('/api/analyze/', {
         analysis_id: uploadResponse1.data.analysis_id
       });
-      
-      const analyzeResponse2 = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/analyze/`, {
+
+      // Analyze second file
+      const analyzeResponse2 = await api.post('/api/analyze/', {
         analysis_id: uploadResponse2.data.analysis_id
       });
-      
-      // Compare resumes based on skills
-      const skills1 = analyzeResponse1.data.resume_skills;
-      const skills2 = analyzeResponse2.data.resume_skills;
-      const commonSkills = skills1.filter(skill => skills2.includes(skill));
-      const uniqueTo1 = skills1.filter(skill => !skills2.includes(skill));
-      const uniqueTo2 = skills2.filter(skill => !skills1.includes(skill));
-      
-      // Calculate similarity based on common skills
-      const totalUniqueSkills = [...new Set([...skills1, ...skills2])].length;
-      const similarityScore = totalUniqueSkills > 0 ? 
-        Math.round((commonSkills.length / totalUniqueSkills) * 100) : 0;
-      
-      setComparisonResult({
-        similarity_score: similarityScore,
-        file1_skills: skills1,
-        file2_skills: skills2,
-        common_skills: commonSkills,
-        unique_to_file1: uniqueTo1,
-        unique_to_file2: uniqueTo2,
-        file1_analysis: analyzeResponse1.data,
-        file2_analysis: analyzeResponse2.data
+
+      // Compare files
+      const compareResponse = await api.post('/api/compare/', {
+        file1_id: uploadResponse1.data.analysis_id,
+        file2_id: uploadResponse2.data.analysis_id
+      });
+
+      setComparisonData({
+        file1: analyzeResponse1.data,
+        file2: analyzeResponse2.data,
+        comparison: compareResponse.data
       });
     } catch (err) {
-      setError('Error comparing resumes. Please try again.');
-      console.error(err);
+      let errorMessage = 'Error comparing documents. Please try again.';
+      
+      if (err.response && err.response.data && err.response.data.error) {
+        errorMessage = err.response.data.error;
+      }
+      
+      setError(errorMessage);
+      console.error('Comparison error:', err);
     } finally {
       setLoading(false);
+      setShowAnimation(false);
     }
   };
-
-  const pieData = comparisonResult ? [
-    { name: 'Common Skills', value: comparisonResult.common_skills.length },
-    { name: 'Unique to Resume 1', value: comparisonResult.unique_to_file1.length },
-    { name: 'Unique to Resume 2', value: comparisonResult.unique_to_file2.length }
-  ] : [];
-
-  const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899'];
-
-  const barData = comparisonResult ? [
-    { name: 'Resume 1', skills: comparisonResult.file1_skills.length },
-    { name: 'Resume 2', skills: comparisonResult.file2_skills.length },
-    { name: 'Common', skills: comparisonResult.common_skills.length }
-  ] : [];
 
   return (
     <div className="min-h-screen container mx-auto px-4 sm:px-6 py-8">
@@ -197,7 +188,7 @@ const ComparePage = () => {
         </motion.div>
 
         {/* Results Section */}
-        {comparisonResult && (
+        {comparisonData && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -209,7 +200,7 @@ const ComparePage = () => {
               <h2 className="text-2xl font-bold mb-4">Similarity Score</h2>
               <div className="relative w-48 h-48 mx-auto">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-4xl font-bold">{Math.round(comparisonResult.similarity_score)}%</span>
+                  <span className="text-4xl font-bold">{Math.round(comparisonData.comparison.similarity_score)}%</span>
                 </div>
                 <svg viewBox="0 0 36 36" className="w-full h-full">
                   <path
@@ -227,7 +218,7 @@ const ComparePage = () => {
                     fill="none"
                     stroke="url(#gradient)"
                     strokeWidth="3"
-                    strokeDasharray={`${comparisonResult.similarity_score}, 100`}
+                    strokeDasharray={`${comparisonData.comparison.similarity_score}, 100`}
                   />
                   <defs>
                     <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -238,7 +229,7 @@ const ComparePage = () => {
                 </svg>
               </div>
               <p className="text-muted-foreground mt-4">
-                The resumes share {comparisonResult.similarity_score}% similarity in skills.
+                The resumes share {comparisonData.comparison.similarity_score}% similarity in skills.
               </p>
             </div>
 
@@ -246,33 +237,16 @@ const ComparePage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="bg-background border rounded-2xl p-6">
                 <h3 className="text-xl font-semibold mb-6 text-center">Skills Distribution</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RechartsPieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
+                <SkillDistributionChart
+                  data={comparisonData.comparison.skill_distribution}
+                />
               </div>
               
               <div className="bg-background border rounded-2xl p-6">
                 <h3 className="text-xl font-semibold mb-6 text-center">Skills Comparison</h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
-                    data={barData}
+                    data={comparisonData.comparison.skill_comparison}
                     margin={{
                       top: 5,
                       right: 30,
@@ -304,7 +278,7 @@ const ComparePage = () => {
                 <div>
                   <h4 className="font-semibold mb-3 text-center text-blue-500">Resume 1 Skills</h4>
                   <div className="flex flex-wrap gap-2">
-                    {comparisonResult.file1_skills.map((skill, index) => (
+                    {comparisonData.file1.skills.map((skill, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-blue-500/10 text-blue-500 rounded-full text-sm"
@@ -318,7 +292,7 @@ const ComparePage = () => {
                 <div>
                   <h4 className="font-semibold mb-3 text-center text-green-500">Common Skills</h4>
                   <div className="flex flex-wrap gap-2">
-                    {comparisonResult.common_skills.map((skill, index) => (
+                    {comparisonData.comparison.common_skills.map((skill, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-green-500/10 text-green-500 rounded-full text-sm"
@@ -332,7 +306,7 @@ const ComparePage = () => {
                 <div>
                   <h4 className="font-semibold mb-3 text-center text-purple-500">Resume 2 Skills</h4>
                   <div className="flex flex-wrap gap-2">
-                    {comparisonResult.file2_skills.map((skill, index) => (
+                    {comparisonData.file2.skills.map((skill, index) => (
                       <span
                         key={index}
                         className="px-3 py-1 bg-purple-500/10 text-purple-500 rounded-full text-sm"
@@ -350,7 +324,7 @@ const ComparePage = () => {
               <div className="bg-background border rounded-2xl p-6">
                 <h3 className="text-lg font-semibold mb-4 text-center text-red-500">Unique to Resume 1</h3>
                 <div className="flex flex-wrap gap-2">
-                  {comparisonResult.unique_to_file1.map((skill, index) => (
+                  {comparisonData.comparison.unique_to_file1.map((skill, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-red-500/10 text-red-500 rounded-full text-sm"
@@ -364,7 +338,7 @@ const ComparePage = () => {
               <div className="bg-background border rounded-2xl p-6">
                 <h3 className="text-lg font-semibold mb-4 text-center text-orange-500">Unique to Resume 2</h3>
                 <div className="flex flex-wrap gap-2">
-                  {comparisonResult.unique_to_file2.map((skill, index) => (
+                  {comparisonData.comparison.unique_to_file2.map((skill, index) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-orange-500/10 text-orange-500 rounded-full text-sm"
@@ -378,7 +352,7 @@ const ComparePage = () => {
           </motion.div>
         )}
         
-        {!comparisonResult && !loading && (
+        {!comparisonData && !loading && (
           <div className="text-center py-12">
             <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Compare Resumes</h3>

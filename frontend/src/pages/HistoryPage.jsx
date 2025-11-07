@@ -1,26 +1,40 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, FileText, BarChart3, TrendingUp, Loader2, Eye } from 'lucide-react';
-import axios from 'axios';
+import { 
+  History, 
+  BarChart3, 
+  FileText, 
+  Calendar, 
+  ArrowRight,
+  Loader2,
+  TrendingUp
+} from 'lucide-react';
+import { api } from '../apiClient';
 import AnalysisResults from '../components/AnalysisResults';
 
 const HistoryPage = () => {
-  const [analyses, setAnalyses] = useState([]);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchHistory();
   }, []);
 
   const fetchHistory = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/history/`);
-      setAnalyses(response.data.history || []);
-    } catch (error) {
-      console.error('Error fetching history:', error);
+      const response = await api.get('/api/history/');
+      setHistory(response.data.history);
+    } catch (err) {
+      setError('Error fetching analysis history. Please try again.');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -38,14 +52,40 @@ const HistoryPage = () => {
   };
 
   const viewDetails = async (analysisId) => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/analyze/`, {
+      const response = await api.post('/api/analyze/', {
         analysis_id: analysisId
       });
       setSelectedAnalysis(response.data);
       setShowDetails(true);
-    } catch (error) {
-      console.error('Error fetching analysis details:', error);
+    } catch (err) {
+      setError('Error fetching analysis details. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reanalyze = async (analysisId) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post('/api/analyze/', {
+        analysis_id: analysisId
+      });
+      
+      // Store in localStorage and navigate to results
+      localStorage.setItem('lastAnalysis', JSON.stringify(response.data));
+      navigate('/home');
+    } catch (err) {
+      setError('Error re-analyzing document. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,9 +130,9 @@ const HistoryPage = () => {
           </div>
         ) : (
           <div>
-            {analyses.length > 0 ? (
+            {history.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {analyses.map((analysis, index) => (
+                {history.map((analysis, index) => (
                   <motion.div
                     key={analysis.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -150,13 +190,22 @@ const HistoryPage = () => {
                         <TrendingUp className="h-4 w-4" />
                         <span className="text-sm">Analysis #{analysis.id}</span>
                       </div>
-                      <button
-                        onClick={() => viewDetails(analysis.id)}
-                        className="flex items-center gap-1 text-sm text-primary hover:underline"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View Details
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => viewDetails(analysis.id)}
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => reanalyze(analysis.id)}
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                          Reanalyze
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 ))}

@@ -20,7 +20,7 @@ import {
   Globe,
   Award
 } from 'lucide-react';
-import axios from 'axios';
+import { api, apiForm } from '../apiClient';
 import AnalysisResults from '../components/AnalysisResults';
 import AnalysisAnimation from '../components/AnalysisAnimation';
 
@@ -125,11 +125,7 @@ const Home = () => {
 
     try {
       // Upload files
-      const uploadResponse = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/upload/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const uploadResponse = await apiForm.post('/api/upload/', formData);
 
       // Show success message for document upload
       setError('Resume and Job Description uploaded successfully!');
@@ -138,7 +134,7 @@ const Home = () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Analyze files
-      const analyzeResponse = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/analyze/`, {
+      const analyzeResponse = await api.post('/api/analyze/', {
         analysis_id: uploadResponse.data.analysis_id
       });
 
