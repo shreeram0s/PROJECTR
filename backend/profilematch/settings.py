@@ -29,6 +29,10 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,profilematch-backend.onrender.com,projektabackend.onrender.com', cast=lambda v: [s.strip() for s in v.split(',')])
 
+# Add this to ensure Render can access the service
+if 'RENDER' in os.environ:
+    ALLOWED_HOSTS = ['*']
+
 
 # Application definition
 
@@ -163,7 +167,11 @@ CORS_ALLOWED_ORIGINS = [
     "https://projektafrontend.onrender.com"
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False
+# Allow all origins in Render environment for easier deployment
+if 'RENDER' in os.environ:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOW_CREDENTIALS = True
 
