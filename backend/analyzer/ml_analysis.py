@@ -8,19 +8,6 @@ import nltk
 import re
 from collections import Counter
 import string
-from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-def calculate_similarity(text1, text2):
-    """Calculate cosine similarity between two text documents"""
-    vectorizer = TfidfVectorizer()
-    try:
-        tfidf_matrix = vectorizer.fit_transform([text1, text2])
-        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-        return float(similarity)
-    except Exception as e:
-        print(f"Error calculating similarity: {e}")
-        return 0.0
 
 # Download required NLTK data
 try:

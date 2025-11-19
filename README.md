@@ -38,13 +38,21 @@ ProFileMatch is an intelligent career development platform that helps job seeker
 - PostgreSQL
 
 ### Environment Variables
-Use the provided samples and copy them to real env files for local dev (never commit your real keys):
-
-Backend (Django): `backend/env.sample` → copy to `backend/.env` and fill values
-
-Frontend (Vite): `frontend/env.sample` → copy to `frontend/.env` and set `VITE_API_URL`.
-
-On Render, set all secrets in the Render Dashboard or via `render.yaml` `envVars`.
+Create a `.env` file in the backend directory with the following variables:
+```
+SECRET_KEY=your_django_secret_key
+DEBUG=False
+ALLOWED_HOSTS=your-domain.com,another-domain.com
+DB_NAME=your_database_name
+DB_USER=your_database_user
+DB_PASSWORD=your_database_password
+DB_HOST=your_database_host
+DB_PORT=5432
+YOUTUBE_API_KEY=your_youtube_api_key
+ADZUNA_APP_ID=your_adzuna_app_id
+ADZUNA_APP_KEY=your_adzuna_app_key
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com,https://another-frontend-domain.com
+```
 
 ### Local Development Setup
 
@@ -67,18 +75,20 @@ npm run dev
 
 ### Deployment on Render
 
-This repo includes `render.yaml` which provisions:
-- A Python Web Service for the backend in `backend/`
-- A Static Site for the frontend in `frontend/`
-- A managed Postgres database
+1. Fork this repository to your GitHub account
+2. Create a new Web Service on Render
+3. Connect your GitHub repository
+4. Set the following build and start commands:
+   - Build: `pip install -r requirements.txt`
+   - Start: `python manage.py migrate && gunicorn profilematch.wsgi:application`
+5. Add the required environment variables in the Render dashboard
+6. Deploy the application
 
-Steps:
-1. Push this repository to GitHub.
-2. In Render, New + → Blueprint → select this repo (it will detect `render.yaml`).
-3. Before first deploy, set environment variables in each service:
-   - Backend: `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DB_*`, `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `YOUTUBE_API_KEY`.
-   - Frontend: `VITE_API_URL` pointing to the backend URL.
-4. Deploy. Render will build and start both services automatically.
+For the frontend:
+1. Create another Web Service on Render
+2. Set the build command to: `npm install && npm run build`
+3. Set the publish directory to: `dist`
+4. Add environment variables as needed
 
 ## Project Structure
 ```
