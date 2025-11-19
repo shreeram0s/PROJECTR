@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 import json
 from .models import Resume, Analysis
-from .ml_analysis import ResumeAnalyzer, TextExtractor, calculate_similarity
+from .ml_analysis import ResumeAnalyzer, TextExtractor
 from .job_fetcher import fetch_jobs_from_adzuna
 from django.conf import settings
 
